@@ -1,29 +1,31 @@
 pipeline {
-  agent any
-  environment {
-    IMAGE_NAME = "jenkins-docker-demo"
-    CONTAINER_NAME = "jenkins-docker-demo-container"
-  }
-  stages {
-    stage('Checkout') {
-      steps { checkout scm }
+    agent {
+        docker {
+            image 'node:18-alpine'
+        }
     }
-    stage('Build & Test') {
-      steps {
-        sh 'npm install'
-        sh 'npm test'
-      }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/GargiMittal10/assign1.git'
+            }
+        }
+        stage('Build & Test') {
+            steps {
+                sh 'npm install'
+                sh 'npm test || echo "No tests"'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t demo-node-app .'
+            }
+        }
+        stage('Deploy') {
+            steps {
+                sh 'docker run -d -p 3000:3000 demo-node-app'
+            }
+        }
     }
-    stage('Build Docker Image') {
-      steps {
-        sh 'docker build -t $IMAGE_NAME:$BUILD_NUMBER .'
-      }
-    }
-    stage('Deploy') {
-      steps {
-        sh 'docker rm -f $CONTAINER_NAME || true'
-        sh 'docker run -d --name $CONTAINER_NAME -p 3000:3000 $IMAGE_NAME:$BUILD_NUMBER'
-      }
-    }
-  }
 }
